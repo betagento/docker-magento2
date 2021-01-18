@@ -22,24 +22,66 @@ Download Magento 2 in any way you want (zip/tgz from website, composer, etc) and
 
 If you want to change the default "magento2" directory simply change its name in the "docker-compose.yml" (there are 2 references, under the "cron" section and under the "apache" section).
 
+## Setup nginx vhost on host machine
+  - Add `127.0.0.1  betagento.docker` to /etc/hosts on host machine
+
+## Add utilities 
+  1. Edit `~/.zshrc` or `~/.bashrc` with your preferred editor
+  2. Append `export PATH=$PATH:<path-to-folder>/docker-magento2/bin` to the end of the file.
+  3. Type `source ~/.zshrc` or `~/.bashrc` to apply the changes. 
+
 ## Starting all docker containers
 ```
 docker-compose up -d
+OR
+m2-up
 ```
 The fist time you run this command it's gonna take some time to download all the required images from docker hub.
 
 ## Install Magento2
 
 ### Method 1: CLI
+Access to Apache container
 ```
-docker exec -it docker-magento2_apache_1 bash
+docker exec -it $(docker ps | grep _apache | cut -f 1 -d " ") bash
+OR
+m2-shell
+```
+
+And then
+```
 php bin/magento setup:install \
-  --db-host docker-magento2_db_1 --db-name magento2 --db-user magento2 --db-password magento2  --admin-user admin --timezone 'Europe/Rome' --currency EUR --use-rewrites 1 --cleanup-database \
-  --backend-frontname admin --admin-firstname AdminFirstName --admin-lastname AdminLastName --admin-email 'admin@email.com' --admin-password 'ChangeThisPassword1' --base-url 'https://betagento.docker/' --language en_US \
-  --session-save=redis --session-save-redis-host=sessions --session-save-redis-port=6379 --session-save-redis-db=0 --session-save-redis-password='' \
-  --cache-backend=redis --cache-backend-redis-server=cache --cache-backend-redis-port=6379 --cache-backend-redis-db=0 \
-  --page-cache=redis --page-cache-redis-server=cache --page-cache-redis-port=6379 --page-cache-redis-db=1 \
-  --search-engine=elasticsearch7 --elasticsearch-host=elasticsearch
+  --base-url='https://betagento.docker/' \
+  --db-host=docker-magento2_db_1 \
+  --db-name=magento2 \
+  --db-user=magento2 \
+  --db-password=magento2  \
+  --admin-user=admin \
+  --timezone='Asia/Ho_Chi_Minh' \
+  --language=en_US \
+  --currency=USD \
+  --use-rewrites=1 \
+  --cleanup-database \
+  --backend-frontname=admin \
+  --admin-firstname=AdminFirstName \
+  --admin-lastname=AdminLastName \
+  --admin-email='hello@betagento.com' \
+  --admin-password='ChangeThisPassword1' \
+  --session-save=redis \
+  --session-save-redis-host=sessions \
+  --session-save-redis-port=6379 \
+  --session-save-redis-db=0 \
+  --session-save-redis-password='' \
+  --cache-backend=redis \
+  --cache-backend-redis-server=cache \
+  --cache-backend-redis-port=6379 \
+  --cache-backend-redis-db=0 \
+  --page-cache=redis \
+  --page-cache-redis-server=cache \
+  --page-cache-redis-port=6379 \
+  --page-cache-redis-db=1 \
+  --search-engine=elasticsearch7 \
+  --elasticsearch-host=elasticsearch
 ```
 
 ### Method 2: Web installer
@@ -49,16 +91,25 @@ If you want to install Magento via web installer (not the best option, it will p
 https://betagento.docker/
 ```
 and use the wizard to install Magento2.  
-For database configuration use hostname db (or the name assigned to the DB container in your `docker-compose.yml` file, default is docker-magento2_db_1), and username/password/dbname you have in your docker-compose.xml file, defaults are:
+For database configuration use hostname db (or the name assigned to the DB container in your `docker-compose.yml` file, default is docker-magento2_db_1), and username/password/dbname you have in your docker-compose.yml file, defaults are:
 - MYSQL_USER=magento2
 - MYSQL_PASSWORD=magento2
 - MYSQL_DATABASE=magento2
 
 ## Deploy static files
 ```
-docker exec -it docker-magento2_apache_1 bash
 php bin/magento dev:source-theme:deploy
-php bin/magento setup:static-content:deploy
+php bin/magento setup:static-content:deploy -f
+php bin/magento setup:di:compile
+```
+OR
+```
+m2-flush-cache
+```
+
+## Set developer mode
+```
+php bin/magento deploy:mode:set developer
 ```
 
 ## Enable Redis for Magento's cache
@@ -104,7 +155,7 @@ If you installed Magento via CLI then Redis is already configured, otherwise ope
 ```
 and delete all Magento's cache with
 ```
-rm -rf magento2/var/cache/*
+rm -rf var/cache/*
 ```
 from now on the var/cache directory should stay empty cause all the caches should be stored in Redis.
 
@@ -145,7 +196,7 @@ with these ones:
 ```
 and delete old Magento's sessions with
 ```
-rm -rf magento2/var/session/*
+rm -rf var/session/*
 ```
 
 ## Enable Varnish
@@ -175,7 +226,7 @@ If you need to generate new self signed certificates use this command
 ```
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/nginx.key -out /etc/nginx/ssl/nginx.crt
 ```
-then you can mount them into the nginx-ssl container using the "volumes" instruction in the docker-compose.xml file. Same thing goes if you need to use custom nginx configurations (you can mount them into /etc/nginx/conf.d). Check the source code of https://github.com/fballiano/docker-nginx-ssl-for-magento2 to better understand where are the configuration stored inside the image/container.
+then you can mount them into the nginx-ssl container using the "volumes" instruction in the docker-compose.yml file. Same thing goes if you need to use custom nginx configurations (you can mount them into /etc/nginx/conf.d). Check the source code of https://github.com/fballiano/docker-nginx-ssl-for-magento2 to better understand where are the configuration stored inside the image/container.
 
 ## Scaling apache containers
 If you need more horsepower you can
@@ -193,7 +244,7 @@ Also, the cron container (which updates Varnish's VCL) sets a "probe" to "/fb_ho
 ## Custom php.ini
 We already have a personalized php.ini inside this project: https://github.com/fballiano/docker-magento2-apache-php/blob/master/php.ini but if you want to further customize your settings:
 - edit the php.ini file in the root directoy of this project
-- edit the "docker-compose.xml" file, look for the 2 commented lines (under the "cron" section and under the "apache" section) referencing the php.ini
+- edit the "docker-compose.yml" file, look for the 2 commented lines (under the "cron" section and under the "apache" section) referencing the php.ini
 - start/restart the docker stack
 
 Please note that your php.ini will be the last parsed thus you can ovverride any setting.
