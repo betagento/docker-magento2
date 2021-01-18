@@ -15,11 +15,11 @@ services:
       - elasticsearch
     volumes:
       - type: bind
-        source: ./magento2
+        source: ../betagento
         target: /var/www/html
         consistency: delegated
       - type: bind
-        source: ./varnish.secret
+        source: ./certs/varnish.secret
         target: /varnish.secret
         consistency: consistent
       # Enable the next line if you want to add a custom php.ini
@@ -44,8 +44,8 @@ services:
     links:
       - apache
     volumes:
-      - ./varnish.vcl:/etc/varnish/default.vcl
-      - ./varnish.secret:/etc/varnish/secret
+      - ./certs/varnish.vcl:/etc/varnish/default.vcl
+      - ./certs/varnish.secret:/etc/varnish/secret
     environment:
       - CACHE_SIZE=256M
 
@@ -62,10 +62,10 @@ services:
       - clusterdata
     volumes:
       - type: bind
-        source: ./magento2
+        source: ../betagento
         target: /var/www/html
         consistency: delegated
-      - ~/.composer/auth.json:/root/.composer/auth.json
+      - ../betagento/auth.json:/root/.composer/auth.json
       # Enable the next line if you want to add a custom php.ini
       #- ./php.ini:/usr/local/etc/php/conf.d/999-customphp.ini
 
