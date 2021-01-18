@@ -74,10 +74,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - type: volume
-        source: dbdata
-        target: /var/lib/mysql
-        consistency: delegated
+      - ./data/sql:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=magento2
       - MYSQL_DATABASE=magento2
@@ -108,5 +105,3 @@ services:
   sessions:
     image: redis:5
 
-volumes:
-  dbdata:
