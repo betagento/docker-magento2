@@ -1,0 +1,72 @@
+version: '3.7'
+services:
+  cron:
+    container_name: betagento_cron
+    volumes:
+      # To override the default magento2 directory, uncomment below.
+      # See docker-compose.yml definitions to know which volumes are available
+      # to override.
+      - type: bind
+        source: ../betagento
+        target: /var/www/html
+        consistency: delegated
+      # Enable the next line if you want to add a custom php.ini
+      #- ./conf/php.ini:/usr/local/etc/php/conf.d/999-customphp.ini
+
+  ssl:
+    container_name: betagento_ssl
+    # ports:
+    #   - "443:443"
+    #volumes:
+    #  - ./certs/ssl/nginx.crt:/etc/nginx/ssl/default-fake.crt
+    #  - ./certs/ssl/nginx.key:/etc/nginx/ssl/default-fake.key
+
+  varnish:
+    container_name: betagento_varnish
+    # ports:
+    #   - "80:80"
+    #   - "6082:6082"
+
+  apache:
+    container_name: betagento_apache
+    volumes:
+      - type: bind
+        source: ../betagento
+        target: /var/www/html
+        consistency: delegated
+      # Register the magento 2 and add public & private keys to auth.json
+      - ../betagento/auth.json:/root/.composer/auth.json
+      # Enable the next line if you want to add a custom php.ini
+      #- ./conf/php.ini:/usr/local/etc/php/conf.d/999-customphp.ini
+
+  db:
+    container_name: betagento_db
+    # Port forwarding configuration
+    # Expose the MySQL port to the workstation so you can access it using an
+    # administration software. You must change the first number
+    # NOTE: mapping is HOST:CONTAINER
+    # ports:
+    #   - "3306:3306"
+    volumes:
+      - ./data/sql:/var/lib/mysql
+    # environment:
+    #   - MYSQL_ROOT_PASSWORD=magento2
+    #   - MYSQL_DATABASE=magento2
+    #   - MYSQL_USER=magento2
+    #   - MYSQL_PASSWORD=magento2
+
+  elasticsearch:
+    container_name: betagento_elasticsearch
+    # ports:
+    #   - "9300:9300"
+    #   - "9200:9200"
+
+  cache:
+    container_name: betagento_cache
+
+  clusterdata:
+    container_name: betagento_clusterdata
+
+  sessions:
+    container_name: betagento_sessions
+
