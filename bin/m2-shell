@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+CONTAINER_ID=$(docker ps | grep _apache | cut -f 1 -d " ")
+
+if [ -z "$CONTAINER_ID" ]; then
+    echo "Unable to find the container id 'apache'" 1>&2
+    echo "You can start the magento 2 with 'm2-up'" 1>&2
+    exit -1
+fi
+
+if [ -z "$1" ]; then
+    docker exec -it $CONTAINER_ID bash
+else
+    docker exec -it $CONTAINER_ID bash -c "$@"
+fi

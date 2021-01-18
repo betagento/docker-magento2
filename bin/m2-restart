@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+m2-down && m2-up

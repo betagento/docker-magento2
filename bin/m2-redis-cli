@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+CONTAINER_ID=$(docker ps | grep _cache | cut -f 1 -d " ")
+docker exec -it $CONTAINER_ID redis-cli
