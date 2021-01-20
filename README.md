@@ -23,7 +23,7 @@ Download Magento 2 in any way you want (zip/tgz from website, composer, etc) and
 If you want to change the default "magento2" directory simply change its name in the "docker-compose.yml" (there are 2 references, under the "cron" section and under the "apache" section).
 
 ## Setup nginx vhost on host machine
-  - Add `127.0.0.1  betagento.docker` to /etc/hosts on host machine
+  - Add `127.0.0.1  betagento.com` to /etc/hosts on host machine
 
 ## Add utilities 
   1. Edit `~/.zshrc` or `~/.bashrc` with your preferred editor
@@ -51,7 +51,7 @@ m2-shell
 And then
 ```
 php bin/magento setup:install \
-  --base-url='https://betagento.docker/' \
+  --base-url='https://betagento.com/' \
   --db-host=docker-magento2_db_1 \
   --db-name=magento2 \
   --db-user=magento2 \
@@ -88,7 +88,7 @@ php bin/magento setup:install \
 
 If you want to install Magento via web installer (not the best option, it will probably timeout) open your browser to the address:
 ```
-https://betagento.docker/
+https://betagento.com/
 ```
 and use the wizard to install Magento2.  
 For database configuration use hostname db (or the name assigned to the DB container in your `docker-compose.yml` file, default is docker-magento2_db_1), and username/password/dbname you have in your docker-compose.yml file, defaults are:

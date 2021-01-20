@@ -26,14 +26,29 @@ services:
       #- ./php.ini:/usr/local/etc/php/conf.d/999-customphp.ini
 
   ssl:
-    image: fballiano/nginx-ssl-for-magento2
+    # image: fballiano/nginx-ssl-for-magento2
+    image: nginx:1.15-alpine
+    restart: unless-stopped
     depends_on:
       - varnish
     links:
       - varnish
     ports:
       - "443:443"
+    volumes:
+      - ./conf/nginx:/etc/nginx/conf.d
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+  
   varnish:
     image: fballiano/varnish:M2.4
     ports:
