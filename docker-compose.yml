@@ -19,7 +19,7 @@ services:
         target: /var/www/html
         consistency: delegated
       - type: bind
-        source: ./certs/varnish.secret
+        source: ./conf/varnish/certs/varnish.secret
         target: /varnish.secret
         consistency: consistent
       # Enable the next line if you want to add a custom php.ini
@@ -59,8 +59,8 @@ services:
     links:
       - apache
     volumes:
-      - ./certs/varnish.vcl:/etc/varnish/default.vcl
-      - ./certs/varnish.secret:/etc/varnish/secret
+      - ./conf/varnish/certs/varnish.vcl:/etc/varnish/default.vcl
+      - ./conf/varnish/certs/varnish.secret:/etc/varnish/secret
     environment:
       - CACHE_SIZE=256M
 

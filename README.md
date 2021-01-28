@@ -1,13 +1,13 @@
 # Docker Magento2: Varnish 6 + PHP7.4 + Redis + Elasticsearch 7.6 + SSL cluster ready docker-compose infrastructure
 
 ## Infrastructure overview
-* Container 1: MariaDB
+* Container 1: MariaDB 8.0
 * Container 2: Redis (volatile, for Magento's cache)
 * Container 3: Redis (for Magento's sessions)
 * Container 4: Apache 2.4 + PHP 7.4 (modphp)
 * Container 5: Cron
 * Container 6: Varnish 6
-* Container 7: Redis (volatile, cluster nodes autodiscovery)
+* Container 7: Redis 5 (volatile, cluster nodes autodiscovery)
 * Container 8: Nginx SSL terminator
 * Container 9: Elasticsearch 7.6
 
@@ -249,29 +249,39 @@ We already have a personalized php.ini inside this project: https://github.com/f
 
 Please note that your php.ini will be the last parsed thus you can ovverride any setting.
 
-## Tested on:
-* Docker for Mac 19
 
 ## TODO
-* DB clustering?
 * RabbitMQ?
-let me know what features would you like to see implemented.
 
-## Changelog:
-* 2020-09-19:
-  * Magento 2.4 branch added
-  * Elasticsearch container added for Magento 2.4
-  * Upaded all dependencies
-* 2020-03-18:
-  * added "sockets" PHP extension to docker-apache-php image
-  * fixed some typos/mistakes in the README
-  * added CLI install to the README
-  * refactored some parts of the documentation to better use magento's CLI
-* 2019-08-09:
-  * small bugfix in varnishadm.sh and varnishncsa.sh scripts
-* 2019-08-06:
-  * new redis sessions container was added
-* 2019-08-05:
-  * migrated to docker-compose syntax 3.7
-  * implemented "delegated" consistency for some of volumes for a better performance
-  * varnish.vcl was regenerated for Varnish 5 (which was already used since some months)
+
+# Solve Errors
+
+This happens due to insufficient permissions on the project folder and files.Also www-data must be owner of the project if using Apache as web-server. Please execute commands given below:
+
+### Error `The directory "/var/www/html/generated/code/Magento" cannot be deleted Warning!rmdir(/var/www/html/generated/code/Magento): Directory not empty`
+```
+sudo chown -R www-data:www-data [path to magento directory]
+navigate to root of your magento project
+find . -type f -exec chmod 664 {} \;
+find . -type d -exec chmod 775 {} \;
+find ./var -type d -exec chmod 777 {} \;
+find ./pub/media -type d -exec chmod 777 {} \;
+find ./pub/static -type d -exec chmod 777 {} \;
+chmod 777 ./app/etc
+chmod 644 ./app/etc/*.xml
+chmod u+x bin/magento
+
+```
+
+OR
+
+```
+find var vendor pub/static pub/media app/etc -type f -exec chmod g+w {} \;
+find var vendor pub/static pub/media app/etc -type d -exec chmod g+w {} \;
+chmod u+x bin/magento
+```
+
+### Disable redundant third party modules
+php bin/magento module:status | grep -v Magento | grep -v List | grep -v None | grep -v -e '^$'| xargs php bin/magento module:disable
+php bin/magento module:status | grep -v Magento | grep -v List | grep -v None | grep -v -e '^$'| xargs php bin/magento module:disable -f
+No newline at end of file

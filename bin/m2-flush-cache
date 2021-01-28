@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-m2-shell "rm -rf magento2/var/cache/*"
+m2-shell "rm -rf /var/cache/*"
 m2-shell "php bin/magento dev:source-theme:deploy"
 m2-shell "php bin/magento setup:static-content:deploy"
 m2-shell "php bin/magento setup:di:compile"
