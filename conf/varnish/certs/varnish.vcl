@@ -53,6 +53,14 @@ sub vcl_recv {
           return (pipe);
     }
 
+    if ((client.ip != "127.0.0.1" && std.port(server.ip) == 80) && 
+        (req.http.host ~ "^(?i)(www\.)?betagento.com") && 
+        (req.url ~ "^/.well-known/.*")
+        ) {
+        set req.http.x-redir = "https://" + req.http.host + req.url;
+        return (synth(750, ""));
+    }
+
     # We only deal with GET and HEAD by default
     if (req.method != "GET" && req.method != "HEAD") {
         return (pass);
@@ -110,6 +118,16 @@ sub vcl_recv {
     }
 
     return (hash);
+}
+
+sub vcl_synth {
+    # Listen to 750 status from vcl_recv.
+    if (resp.status == 750) {
+        # Redirect to HTTPS with 301 status.
+        set resp.status = 301;
+        set resp.http.Location = req.http.x-redir;
+        return(deliver);
+    }
 }
 
 sub vcl_hash {
