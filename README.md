@@ -17,7 +17,7 @@
 
 * Locate to the project and copy "docker-compose.override.yml.dist" to "docker-compose.override.yml"
 
-* Change the default "magento2" to your project's name in the "docker-compose.override.yml" (there are 2 references, under the "cron" section and under the "apache" section)
+* Change the default "betagento" to your project's name in the "docker-compose.override.yml" (there are 2 references, under the "cron" section and under the "apache" section)
 
 * Add `"127.0.0.1  betagento.com"` to `/etc/hosts` on host machine
 
@@ -100,7 +100,7 @@ m2-flush-cache
 ```
 
 ## Enable Redis for Magento's cache
-If you installed Magento via CLI then Redis is already configured, otherwise open magento2/app/etc/env.php and add these lines:
+If you installed Magento via CLI then Redis is already configured, otherwise open app/etc/env.php and add these lines:
 ```php
 'cache' => [
   'frontend' => [
@@ -147,7 +147,7 @@ $ rm -rf var/cache/*
 from now on the var/cache directory should stay empty cause all the caches should be stored in Redis.
 
 ## Enable Redis for Magento's sessions
-If you installed Magento via CLI then Redis is already configured, otherwise open magento2/app/etc/env.php and replace these lines:
+If you installed Magento via CLI then Redis is already configured, otherwise open app/etc/env.php and replace these lines:
 ```php
 'session' => [
   'save' => 'redis',
@@ -284,13 +284,13 @@ $ php bin/magento module:status | grep -v Magento | grep -v List | grep -v None 
 
 ___
 ## Other Magento 2.4 command lines
-# Update config to use varnish
+### Update config to use varnish
 ```
 $ php bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2
 $ php bin/magento config:set system/full_page_cache/varnish/backend_host nginx
 $ php bin/magento config:set system/full_page_cache/varnish/backend_port 80
 ```
-# Update Base url and https
+### Update Base url and https
 ```
 $ php bin/magento config:set web/unsecure/base_url http://betagento.com/
 $ php bin/magento config:set web/secure/base_url https://betagento.com/
@@ -298,17 +298,17 @@ $ php bin/magento config:set web/secure/use_in_frontend 1
 $ php bin/magento config:set web/secure/use_in_adminhtml 1
 $ php bin/magento config:set web/seo/use_rewrites 1
 ```
-# Locale, timezone, currency
+### Locale, timezone, currency
 ```
 $ php bin/magento config:set general/locale/code en_US
 $ php bin/magento config:set general/locale/timezone Asia/Ho_Chi_Minh
 $ php bin/magento config:set currency/options/base VND
 ```
-# Upgrade setup
+### Upgrade setup
 ```
 $ php bin/magento setup:upgrade
 ```
-# Flush cache
+### Flush cache
 ```
 $ php bin/magento cache:clean
 $ php bin/magento cache:flush
