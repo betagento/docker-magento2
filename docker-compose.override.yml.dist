@@ -18,8 +18,13 @@ services:
     # ports:
     #   - "443:443"
     # volumes:
-    #  - ./certs/ssl/nginx.crt:/etc/nginx/ssl/default-fake.crt
-    #  - ./certs/ssl/nginx.key:/etc/nginx/ssl/default-fake.key
+      # These mounts are for production, letsencrypt
+      # - ../../data/certbot/conf:/etc/letsencrypt
+      # - ../../data/certbot/www:/var/www/certbot
+      # These mounts are for localhost
+      # - ./conf/nginx/app.conf:/etc/nginx/conf.d/fballiano-magento2.conf
+      # - ../../local_ssl/localhost.crt:/etc/nginx/ssl/default-fake.crt
+      # - ../../local_ssl/localhost.key:/etc/nginx/ssl/default-fake.key
 
   # certbot:
     # container_name: betagento_certbot
