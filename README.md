@@ -1,4 +1,4 @@
-# Docker Magento2: Varnish 6 + PHP7.4 + Redis + Elasticsearch 7.6 + SSL cluster ready docker-compose infrastructure
+# Docker Magento 2.4: Varnish 6 + PHP7.4 + Redis + Elasticsearch 7.6 + SSL Letsencrypt + cluster ready docker-compose infrastructure
 
 ## Infrastructure overview
 * Container 1: MariaDB 8.0
@@ -8,51 +8,50 @@
 * Container 5: Cron
 * Container 6: Varnish 6
 * Container 7: Redis 5 (volatile, cluster nodes autodiscovery)
-* Container 8: Nginx SSL terminator
+* Container 8: Nginx SSL with Letsencrypt
 * Container 9: Elasticsearch 7.6
 
-### Why a separate cron container?
-First of all containers should be (as far as possible) single process, but the most important thing is that (if someday we'll be able to deploy this infrastructure in production) we may need a cluster of apache+php containers but a single cron container running.
+## Setup Magento 2 project
 
-Plus, with this separation, in the context of a docker swarm, you may be able in the future to separare resources allocated to the cron container from the rest of the infrastructure.
+* Download Magento 2 in any way you want (zip/tgz from website, composer, etc) and extract into your project directory
 
-## Setup Magento 2
+* Locate to the project and copy "docker-compose.override.yml.dist" to "docker-compose.override.yml"
 
-Download Magento 2 in any way you want (zip/tgz from website, composer, etc) and extract in the "magento2" subdirectory of this project.
+* Change the default "magento2" to your project's name in the "docker-compose.override.yml" (there are 2 references, under the "cron" section and under the "apache" section)
 
-If you want to change the default "magento2" directory simply change its name in the "docker-compose.yml" (there are 2 references, under the "cron" section and under the "apache" section).
-
-## Setup nginx vhost on host machine
-  - Add `127.0.0.1  betagento.com` to /etc/hosts on host machine
+* Add `"127.0.0.1  betagento.com"` to `/etc/hosts` on host machine
 
 ## Add utilities 
   1. Edit `~/.zshrc` or `~/.bashrc` with your preferred editor
-  2. Append `export PATH=$PATH:<path-to-folder>/docker-magento2/bin` to the end of the file.
-  3. Type `source ~/.zshrc` or `~/.bashrc` to apply the changes. 
+  2. Append `"export PATH=$PATH:<path-to-folder>/betagento-docker/bin"` to the file
+  3. Type `source ~/.zshrc` or `~/.bashrc` to apply the changes
 
 ## Starting all docker containers
+``` 
+docker-compose up -d 
 ```
-docker-compose up -d
 OR
+```
 m2-up
 ```
-The fist time you run this command it's gonna take some time to download all the required images from docker hub.
+
+> The fist time you run this command it's gonna take some time to download all the required images from docker hub.
 
 ## Install Magento2
-
-### Method 1: CLI
-Access to Apache container
+Access to Apache container by
 ```
 docker exec -it $(docker ps | grep _apache | cut -f 1 -d " ") bash
+```
 OR
+```
 m2-shell
 ```
 
 And then
 ```
-php bin/magento setup:install \
+$ php bin/magento setup:install \
   --base-url='https://betagento.com/' \
-  --db-host=docker-magento2_db_1 \
+  --db-host=betagento_db \
   --db-name=magento2 \
   --db-user=magento2 \
   --db-password=magento2  \
@@ -84,32 +83,20 @@ php bin/magento setup:install \
   --elasticsearch-host=elasticsearch
 ```
 
-### Method 2: Web installer
-
-If you want to install Magento via web installer (not the best option, it will probably timeout) open your browser to the address:
+## Set developer mode if you are on localhost
 ```
-https://betagento.com/
+$ php bin/magento deploy:mode:set developer
 ```
-and use the wizard to install Magento2.  
-For database configuration use hostname db (or the name assigned to the DB container in your `docker-compose.yml` file, default is docker-magento2_db_1), and username/password/dbname you have in your docker-compose.yml file, defaults are:
-- MYSQL_USER=magento2
-- MYSQL_PASSWORD=magento2
-- MYSQL_DATABASE=magento2
 
 ## Deploy static files
 ```
-php bin/magento dev:source-theme:deploy
-php bin/magento setup:static-content:deploy -f
-php bin/magento setup:di:compile
+$ php bin/magento dev:source-theme:deploy
+$ php bin/magento setup:static-content:deploy -f
+$ php bin/magento setup:di:compile
 ```
 OR
 ```
 m2-flush-cache
-```
-
-## Set developer mode
-```
-php bin/magento deploy:mode:set developer
 ```
 
 ## Enable Redis for Magento's cache
@@ -155,20 +142,12 @@ If you installed Magento via CLI then Redis is already configured, otherwise ope
 ```
 and delete all Magento's cache with
 ```
-rm -rf var/cache/*
+$ rm -rf var/cache/*
 ```
 from now on the var/cache directory should stay empty cause all the caches should be stored in Redis.
 
 ## Enable Redis for Magento's sessions
 If you installed Magento via CLI then Redis is already configured, otherwise open magento2/app/etc/env.php and replace these lines:
-```php
-'session' => [
-  'save' => 'files',
-],
-```
-
-with these ones:
-
 ```php
 'session' => [
   'save' => 'redis',
@@ -196,27 +175,26 @@ with these ones:
 ```
 and delete old Magento's sessions with
 ```
-rm -rf var/session/*
+$ rm -rf var/session/*
 ```
 
 ## Enable Varnish
 Varnish Full Page Cache should already be enabled out of the box (we startup Varnish with the default VCL file generated by Magento2) but you could anyway go to "stores -> configuration -> advanced -> system -> full page cache" and:
-* select Varnish in the "caching application" combobox
-* type "apache" in both "access list" and "backend host" fields
-* type 80 in the "backend port" field
-* save
+* Select Varnish in the "caching application" combobox
+* Type "apache" in both "access list" and "backend host" fields
+* Type 80 in the "backend port" field
+* Save
 
 Configure Magento to purge Varnish:
 
 ```
-docker exec -it docker-magento2_apache_1 bash
-php bin/magento setup:config:set --http-cache-hosts=varnish
+$ php bin/magento setup:config:set --http-cache-hosts=varnish
 ```
 
 https://devdocs.magento.com/guides/v2.3/config-guide/varnish/use-varnish-cache.html
 
 ## Enable SSL Support
-Add this line to magento2/.htaccess
+Add this line to the-project-directory/.htaccess
 ```
 SetEnvIf X-Forwarded-Proto https HTTPS=on
 ```
@@ -226,7 +204,7 @@ If you need to generate new self signed certificates use this command
 ```
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/nginx.key -out /etc/nginx/ssl/nginx.crt
 ```
-then you can mount them into the nginx-ssl container using the "volumes" instruction in the docker-compose.yml file. Same thing goes if you need to use custom nginx configurations (you can mount them into /etc/nginx/conf.d). Check the source code of https://github.com/fballiano/docker-nginx-ssl-for-magento2 to better understand where are the configuration stored inside the image/container.
+then you can mount them into the nginx-ssl container using the "volumes" instruction in the docker-compose.override.yml file. Same thing goes if you need to use custom nginx configurations (you can mount them into /etc/nginx/conf.d). Check the source code of https://github.com/fballiano/docker-nginx-ssl-for-magento2 to better understand where are the configuration stored inside the image/container.
 
 ## Scaling apache containers
 If you need more horsepower you can
@@ -243,45 +221,51 @@ Also, the cron container (which updates Varnish's VCL) sets a "probe" to "/fb_ho
 
 ## Custom php.ini
 We already have a personalized php.ini inside this project: https://github.com/fballiano/docker-magento2-apache-php/blob/master/php.ini but if you want to further customize your settings:
-- edit the php.ini file in the root directoy of this project
-- edit the "docker-compose.yml" file, look for the 2 commented lines (under the "cron" section and under the "apache" section) referencing the php.ini
-- start/restart the docker stack
+* Edit the conf/php.ini file in this project
+* Edit the "docker-compose.override.yml" file, look for the 2 commented lines (under the "cron" section and under the "apache" section) referencing the php.ini
+* Start/restart the docker stack
 
-Please note that your php.ini will be the last parsed thus you can ovverride any setting.
+Please note that your php.ini will be the last parsed thus you can override any setting.
 
-
+___
 ## TODO
 * RabbitMQ?
 
+___
+## Solve common __Errors__
 
-# Solve Errors
+### Error 1
+> _This happens due to insufficient permissions on the project folder and files. Also www-data must be owner of the project if using Apache as web-server. Please execute commands given below:_
 
-This happens due to insufficient permissions on the project folder and files.Also www-data must be owner of the project if using Apache as web-server. Please execute commands given below:
-
-### Error `The directory "/var/www/html/generated/code/Magento" cannot be deleted Warning!rmdir(/var/www/html/generated/code/Magento): Directory not empty`
+Solved by
 ```
-sudo chown -R www-data:www-data [path to magento directory]
-navigate to root of your magento project
-find . -type f -exec chmod 664 {} \;
-find . -type d -exec chmod 775 {} \;
-find ./var -type d -exec chmod 777 {} \;
-find ./pub/media -type d -exec chmod 777 {} \;
-find ./pub/static -type d -exec chmod 777 {} \;
-chmod 777 ./app/etc
-chmod 644 ./app/etc/*.xml
-chmod u+x bin/magento
-
+$ sudo chown -R www-data:www-data [path to magento directory]
 ```
 
+### Error 2
+> _Error `The directory "/var/www/html/generated/code/Magento" cannot be deleted Warning!rmdir(/var/www/html/generated/code/Magento): Directory not empty`_
+
+Solved by
+```
+$ find . -type f -exec chmod 664 {} \;
+$ find . -type d -exec chmod 775 {} \;
+$ find ./var -type d -exec chmod 777 {} \;
+$ find ./pub/media -type d -exec chmod 777 {} \;
+$ find ./pub/static -type d -exec chmod 777 {} \;
+$ chmod 777 ./app/etc
+$ chmod 644 ./app/etc/*.xml
+$ chmod u+x bin/magento
+```
 OR
-
 ```
-find var vendor pub/static pub/media app/etc -type f -exec chmod g+w {} \;
-find var vendor pub/static pub/media app/etc -type d -exec chmod g+w {} \;
-chmod u+x bin/magento
+$ find var vendor pub/static pub/media app/etc -type f -exec chmod g+w {} \;
+$ find var vendor pub/static pub/media app/etc -type d -exec chmod g+w {} \;
+$ chmod u+x bin/magento
 ```
 
-### Disable redundant third party modules
-php bin/magento module:status | grep -v Magento | grep -v List | grep -v None | grep -v -e '^$'| xargs php bin/magento module:disable
-php bin/magento module:status | grep -v Magento | grep -v List | grep -v None | grep -v -e '^$'| xargs php bin/magento module:disable -f
-No newline at end of file
+## Disable redundant third party modules
+```
+$ php bin/magento module:status | grep -v Magento | grep -v List | grep -v None | grep -v -e '^$'| xargs php bin/magento module:disable
+
+$ php bin/magento module:status | grep -v Magento | grep -v List | grep -v None | grep -v -e '^$'| xargs php bin/magento module:disable -f
+```

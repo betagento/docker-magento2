@@ -17,9 +17,15 @@ services:
     container_name: betagento_ssl
     # ports:
     #   - "443:443"
-    #volumes:
+    # volumes:
     #  - ./certs/ssl/nginx.crt:/etc/nginx/ssl/default-fake.crt
     #  - ./certs/ssl/nginx.key:/etc/nginx/ssl/default-fake.key
+
+  certbot:
+    container_name: betagento_certbot
+    # volumes:
+    #  - ./data/certbot/conf:/etc/letsencrypt
+    #  - ./data/certbot/www:/var/www/certbot
 
   varnish:
     container_name: betagento_varnish
