@@ -206,6 +206,18 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/nginx
 ```
 then you can mount them into the nginx-ssl container using the "volumes" instruction in the docker-compose.override.yml file. Same thing goes if you need to use custom nginx configurations (you can mount them into /etc/nginx/conf.d). Check the source code of https://github.com/fballiano/docker-nginx-ssl-for-magento2 to better understand where are the configuration stored inside the image/container.
 
+### Setup SSL for production
+Run the file "init-letsencrypt.sh" to generate keychain
+```
+$ sudo ./scrips/init-letsencrypt.sh
+```
+
+### Setup SSL for localhost
+* Update section "ssl" from docker-compose.override.yml & conf/nginx/app.conf for localhost
+* Install certutil by following => https://github.com/suolapeikko/certutil
+* Followign this guide => https://medium.com/internshala-tech/adding-self-trusted-ssl-certificate-for-localhost-on-ubuntu-nginx-c66d70b22e4b
+> For Mac, add the *.crt file to Keychain Access and set Trust to "Always Trust"
+
 ## Scaling apache containers
 If you need more horsepower you can
 ```
@@ -268,4 +280,36 @@ $ chmod u+x bin/magento
 $ php bin/magento module:status | grep -v Magento | grep -v List | grep -v None | grep -v -e '^$'| xargs php bin/magento module:disable
 
 $ php bin/magento module:status | grep -v Magento | grep -v List | grep -v None | grep -v -e '^$'| xargs php bin/magento module:disable -f
+```
+
+___
+## Other Magento 2.4 command lines
+# Update config to use varnish
+```
+$ php bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2
+$ php bin/magento config:set system/full_page_cache/varnish/backend_host nginx
+$ php bin/magento config:set system/full_page_cache/varnish/backend_port 80
+```
+# Update Base url and https
+```
+$ php bin/magento config:set web/unsecure/base_url http://betagento.com/
+$ php bin/magento config:set web/secure/base_url https://betagento.com/
+$ php bin/magento config:set web/secure/use_in_frontend 1
+$ php bin/magento config:set web/secure/use_in_adminhtml 1
+$ php bin/magento config:set web/seo/use_rewrites 1
+```
+# Locale, timezone, currency
+```
+$ php bin/magento config:set general/locale/code en_US
+$ php bin/magento config:set general/locale/timezone Asia/Ho_Chi_Minh
+$ php bin/magento config:set currency/options/base VND
+```
+# Upgrade setup
+```
+$ php bin/magento setup:upgrade
+```
+# Flush cache
+```
+$ php bin/magento cache:clean
+$ php bin/magento cache:flush
 ```
